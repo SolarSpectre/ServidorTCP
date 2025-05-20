@@ -8,6 +8,8 @@ import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Servidor {
 
@@ -15,6 +17,27 @@ public class Servidor {
         Date date = new Date();
         DateFormat formato = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         return "Empleado: " + nombre + " | Acción: " + accion + " | Fecha y Hora: " + formato.format(date);
+    }
+
+    private static void enviarContenidoArchivo(String nombreArchivo, DataOutputStream dos) throws IOException {
+        String rutaArchivo = "C:/Users/solarspectre/Downloads/" + nombreArchivo + ".dat";
+        File archivo = new File(rutaArchivo);
+        
+        if (!archivo.exists()) {
+            dos.writeUTF("ERROR: El archivo no existe");
+            return;
+        }
+
+        try (FileInputStream fis = new FileInputStream(archivo);
+             ObjectInputStream ois = new ObjectInputStream(fis)) {
+            
+            Empleado empleado = (Empleado) ois.readObject();
+            dos.writeUTF("OK");
+            dos.writeUTF(empleado.getRegistros().toString());
+            
+        } catch (ClassNotFoundException e) {
+            dos.writeUTF("ERROR: Error al leer el archivo");
+        }
     }
 
     public static void procesarSolicitud(int puerto) throws Exception {
@@ -29,29 +52,49 @@ public class Servidor {
             OutputStream out = cliente.getOutputStream();
 
             DataInputStream dis = new DataInputStream(in);
-            String nombre = dis.readUTF();
-            String accion = dis.readUTF();
-
-            if (nombre.equalsIgnoreCase("x")) break;
-
-            String registro = getFecha(nombre, accion);
-
-            Empleado empleado = new Empleado();
-            empleado.setNombre(nombre);
-            empleado.addRegistro(registro);
-
             DataOutputStream dos = new DataOutputStream(out);
-            dos.writeUTF("Registro recibido!");
+            
+            String operacion = dis.readUTF();
+            
+            if (operacion.equalsIgnoreCase("LEER")) {
+                String nombreArchivo = dis.readUTF();
+                enviarContenidoArchivo(nombreArchivo, dos);
+            } else {
+                String nombre = operacion;
+                String accion = dis.readUTF();
 
-            String rutaArchivo = "C:/Users/APP DISTRIBUIDAS/Downloads/" + nombre + ".dat";
+                if (nombre.equalsIgnoreCase("x")) break;
 
-            FileOutputStream fos = new FileOutputStream(rutaArchivo, true);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(empleado);
+                String registro = getFecha(nombre, accion);
+                String rutaArchivo = "C:/Users/solarspectre/Downloads/" + nombre + ".dat";
+                
+                List<String> registrosExistentes = new ArrayList<>();
+                File archivo = new File(rutaArchivo);
+                if (archivo.exists()) {
+                    try (FileInputStream fis = new FileInputStream(archivo);
+                         ObjectInputStream ois = new ObjectInputStream(fis)) {
+                        Empleado empleadoExistente = (Empleado) ois.readObject();
+                        registrosExistentes.addAll(empleadoExistente.getRegistros());
+                    } catch (Exception e) {
+                        System.out.println("Error al leer registros existentes: " + e.getMessage());
+                    }
+                }
 
-            oos.close();
-            fos.close();
-            System.out.println("Registro guardado para " + nombre);
+                Empleado empleado = new Empleado();
+                empleado.setNombre(nombre);
+                registrosExistentes.add(registro);
+                for (String reg : registrosExistentes) {
+                    empleado.addRegistro(reg);
+                }
+
+                try (FileOutputStream fos = new FileOutputStream(rutaArchivo);
+                     ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+                    oos.writeObject(empleado);
+                }
+
+                dos.writeUTF("Registro recibido!");
+                System.out.println("Registro guardado para " + nombre);
+            }
             cliente.close();
         }
         servidor.close();

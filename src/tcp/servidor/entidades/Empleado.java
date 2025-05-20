@@ -23,6 +23,10 @@ public class Empleado implements Serializable {
         registros.add(registro);
     }
 
+    public List<String> getRegistros() {
+        return registros;
+    }
+
     @Override
     public String toString() {
         return "Empleado{" +
