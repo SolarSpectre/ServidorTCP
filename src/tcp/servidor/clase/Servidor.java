@@ -20,7 +20,7 @@ public class Servidor {
     }
 
     private static void enviarContenidoArchivo(String nombreArchivo, DataOutputStream dos) throws IOException {
-        String rutaArchivo = "C:/Users/solarspectre/Downloads/" + nombreArchivo + ".dat";
+        String rutaArchivo = "C:/Users/APP DISTRIBUIDAS/Downloads/" + nombreArchivo + ".dat";
         File archivo = new File(rutaArchivo);
         
         if (!archivo.exists()) {
@@ -66,7 +66,7 @@ public class Servidor {
                 if (nombre.equalsIgnoreCase("x")) break;
 
                 String registro = getFecha(nombre, accion);
-                String rutaArchivo = "C:/Users/solarspectre/Downloads/" + nombre + ".dat";
+                String rutaArchivo = "C:/Users/APP DISTRIBUIDAS/Downloads/" + nombre + ".dat";
                 
                 List<String> registrosExistentes = new ArrayList<>();
                 File archivo = new File(rutaArchivo);
